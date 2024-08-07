@@ -1,0 +1,71 @@
+#!/bin/bash
+
+function fail() {
+  echo "$@"
+  exit 1
+}
+
+tmpfile=/tmp/.effdumpprecommit
+
+if test "$1" = install; then
+  ln -rs pre-commit .git/hooks/ || fail "error: pre-commit install failed."
+  echo "success: pre-commit installed."
+  exit
+fi
+
+allfiles="$(git diff-index --name-only --diff-filter=d --cached HEAD)"
+gofiles="$(git diff-index --name-only --diff-filter=d --cached HEAD | grep '\.go$' || true)"
+
+if test -z "$allfiles"; then
+  # No changed files, no checks to do.
+  exit
+fi
+
+if test -z "$noxx" && grep -Hni xx""x $allfiles; then
+  echo "Error: found xx""x comment, check if it was intended to commit, use noxx=1 envvar to skip."
+  exit 1
+fi
+
+if test -n "$gofiles"; then
+  # Go specific tests in this branch.
+  echo -n 'formatting...'
+  gofmt -l $gofiles >"$tmpfile" 2>&1
+  echo -en "\r\e[K"
+  if test -s "$tmpfile"; then
+    echo "Error: gofmt failed for these files:"
+    cat "$tmpfile"
+    exit 1
+  fi
+
+  echo -n 'linting...'
+  revive ./... >"$tmpfile" 2>&1
+  echo -en "\r\e[K"
+  if test -s "$tmpfile"; then
+    echo "Error: revive failed:"
+    cat "$tmpfile"
+    exit 1
+  fi
+
+  echo -n 'testing...'
+  go test ./... >"$tmpfile" 2>&1
+  result="$?"
+  echo -en "\r\e[K"
+  if test "$result" -ne 0; then
+    echo 'Error: tests failed, go test ./...:'
+    cat "$tmpfile"
+    exit 1
+  fi
+fi
+
+echo -n 'hashing...'
+wanthash=$(cat internal/effdumptest/hash)
+gothash=$(go run github.com/ypsu/effdump/internal/effdumptest hash)
+echo -en "\r\e[K"
+if test "$gothash" != "$wanthash"; then
+  echo "Error got hash $gothash, want $wanthash."
+  echo "$gothash" >internal/effdumptest/hash
+  echo "Expectation auto-updated, rerun git commit."
+  exit 1
+fi
+
+rm -f "$tmpfile"
