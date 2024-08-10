@@ -1,4 +1,4 @@
-- implement diff
-- implement expect
-- implement replacer
+- see if "remove newline" expectations can be made single line
+- implement check
+- make caller depth modifiable
 - add test

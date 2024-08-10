@@ -2,9 +2,17 @@
 package efftesting
 
 import (
+	"bytes"
 	"fmt"
+	"go/ast"
+	"go/format"
+	"go/parser"
+	"go/token"
 	"log"
+	"os"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 // expectationString is a local type so that users cannot create it.
@@ -18,6 +26,9 @@ type printfer interface {
 type errorfer interface {
 	Errorf(format string, args ...any)
 }
+type helper interface {
+	Helper()
+}
 
 // ET (EffTesting) is an expectation tester.
 type ET struct {
@@ -30,14 +41,17 @@ func New(t any) ET {
 	return ET{t}
 }
 
-// detab removes the tab characters from the string if it's a multiline string.
+// detab removes the leading tab characters from the string if it's a multiline string.
 // That's because efftesting uses backticks for multiline strings and tab indents them.
-// Also remove the first newline character since that's how ` quoted strings start.
 func detab(s string) string {
-	if !strings.Contains(s, "\n") {
+	if !strings.HasPrefix(s, "\n") {
 		return s
 	}
-	return strings.TrimPrefix(strings.ReplaceAll(s, "\t", ""), "\n")
+	indent := 1
+	for indent < len(s) && s[indent] == '\t' {
+		indent++
+	}
+	return strings.TrimPrefix(strings.TrimRight(strings.ReplaceAll(s, s[:indent], "\n"), "\t"), "\n")
 }
 
 // Expect checks that want is got.
@@ -51,12 +65,16 @@ func (et ET) Expect(desc string, got any, want expectationString) {
 	diff := Diff(w, g)
 	switch reporter := et.t.(type) {
 	case errorfer:
+		if h, ok := et.t.(helper); ok {
+			h.Helper()
+		}
 		reporter.Errorf(format, desc, diff)
 	case printfer:
 		reporter.Printf(format, desc, diff)
 	default:
 		log.Printf(format, desc, diff)
 	}
+	defaultReplacer.replace(g)
 }
 
 // Context is the number of lines to display before and after the diff starts and ends.
@@ -93,4 +111,114 @@ func dummydiff(lts, rts string) string {
 		d = append(d, " "+lt[i])
 	}
 	return strings.Join(d, "\n") + "\n"
+}
+
+var defaultReplacer = replacer{
+	replacements: map[location]string{},
+}
+
+type location struct {
+	fname string
+	line  int
+}
+
+func (loc location) String() string {
+	return fmt.Sprintf("%s:%d", loc.fname, loc.line)
+}
+
+type replacer struct {
+	mu           sync.Mutex
+	replacements map[location]string
+}
+
+func (r *replacer) replace(newstr string) bool {
+	loc := location{}
+	_, loc.fname, loc.line, _ = runtime.Caller(2)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.replacements[loc]; ok {
+		return false
+	}
+	r.replacements[loc] = newstr
+	return true
+}
+
+func (r *replacer) apply(fname string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(r.replacements) == 0 {
+		return nil
+	}
+
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, fname, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("efftesting/parse source: %w", err)
+	}
+
+	var inspectErr error
+	ast.Inspect(f, func(n ast.Node) bool {
+		if inspectErr != nil {
+			return false
+		}
+		if n == nil {
+			return true
+		}
+
+		// Find the Expect and Check functions that have a pending replacement.
+		callexpr, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		if len(callexpr.Args) != 3 {
+			return false
+		}
+		selexpr, ok := callexpr.Fun.(*ast.SelectorExpr)
+		if !ok || selexpr.Sel.Name != "Expect" && selexpr.Sel.Name != "Check" {
+			return true
+		}
+		pos := fset.Position(callexpr.Pos())
+		loc := location{pos.Filename, pos.Line}
+		repl, ok := r.replacements[loc]
+		if !ok {
+			return false
+		}
+		lit, ok := callexpr.Args[2].(*ast.BasicLit)
+		if !ok {
+			inspectErr = fmt.Errorf("%s: expectation is %T, want literal string", pos, callexpr.Args[2])
+			return false
+		}
+
+		// Replace the expectation with a string wrapped in " or ` quotes, whichever fits best.
+		delete(r.replacements, loc)
+		if strings.IndexByte(repl, '\n') == -1 || strings.IndexByte(repl, '`') != -1 {
+			lit.Value = fmt.Sprintf("%q", repl)
+			return false
+		}
+		indent := strings.Repeat("\t", pos.Column)
+		ss := strings.Split(repl, "\n")
+		for i, line := range ss {
+			if i == 0 || line != "" {
+				ss[i] = indent + line
+			}
+		}
+		if ss[len(ss)-1] == "" {
+			// The last line should have one indent less so that the closing `) looks nicely indented.
+			ss[len(ss)-1] = strings.TrimSuffix(indent, "\t")
+		}
+		lit.Value = fmt.Sprintf("`\n%s`", strings.Join(ss, "\n"))
+		return false
+	})
+	if inspectErr != nil {
+		return fmt.Errorf("efftesting/rewrite %s: %v", fname, inspectErr)
+	}
+
+	bs := &bytes.Buffer{}
+	if err := format.Node(bs, fset, f); err != nil {
+		return fmt.Errorf("efftesting/format the updated %s: %v", fname, err)
+	}
+	if err := os.WriteFile(fname, bs.Bytes(), 0644); err != nil {
+		return fmt.Errorf("efftesting/write rewritten source: %v", err)
+	}
+	return nil
 }
