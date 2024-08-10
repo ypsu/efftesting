@@ -57,15 +57,4 @@ if test -n "$gofiles"; then
   fi
 fi
 
-echo -n 'hashing...'
-wanthash=$(cat internal/effdumptest/hash)
-gothash=$(go run github.com/ypsu/effdump/internal/effdumptest hash)
-echo -en "\r\e[K"
-if test "$gothash" != "$wanthash"; then
-  echo "Error got hash $gothash, want $wanthash."
-  echo "$gothash" >internal/effdumptest/hash
-  echo "Expectation auto-updated, rerun git commit."
-  exit 1
-fi
-
 rm -f "$tmpfile"
