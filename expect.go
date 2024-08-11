@@ -217,3 +217,28 @@ func (r *replacer) apply(fname string) error {
 	}
 	return nil
 }
+
+// Main is the TestMain for efftesting.
+// If a _test.go file has a efftesting expectations then call this explicitly:
+//
+//	func TestMain(m *testing.M) {
+//		os.Exit(efftesting.Main(m))
+//	}
+func Main(m *testing.M) int {
+	code := m.Run()
+	if code == 0 || os.Getenv("EFFTESTING_UPDATE") != "1" {
+		if len(defaultReplacer.replacements) != 0 {
+			fmt.Fprintf(os.Stderr, "Expectations need updating, use `EFFTESTING_UPDATE=1 go test ./...` for that.\n")
+		}
+		return code
+	}
+	if len(defaultReplacer.replacements) != 0 {
+		_, testfile, _, _ := runtime.Caller(0)
+		if err := defaultReplacer.apply(testfile); err != nil {
+			fmt.Fprintf(os.Stderr, "efftesting update failed: %v.\n", err)
+			return 1
+		}
+		fmt.Fprintf(os.Stderr, "Expectations updated.\n")
+	}
+	return code
+}

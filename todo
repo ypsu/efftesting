@@ -1,4 +1,2 @@
-- implement check
 - make caller depth modifiable
-- move testmain to the module
 - add a pretty printer helper

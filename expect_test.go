@@ -1,10 +1,8 @@
 package efftesting
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -121,20 +119,5 @@ func TestReplacer(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	code := m.Run()
-	if code == 0 || os.Getenv("EFFTESTING_UPDATE") != "1" {
-		if len(defaultReplacer.replacements) != 0 {
-			fmt.Fprintf(os.Stderr, "Expectations need updating, use `EFFTESTING_UPDATE=1 go test ./...` for that.\n")
-		}
-		os.Exit(code)
-	}
-	if len(defaultReplacer.replacements) != 0 {
-		_, testfile, _, _ := runtime.Caller(0)
-		if err := defaultReplacer.apply(testfile); err != nil {
-			fmt.Fprintf(os.Stderr, "efftesting update failed: %v.\n", err)
-			os.Exit(1)
-		}
-		fmt.Fprintf(os.Stderr, "Expectations updated.\n")
-	}
-	os.Exit(code)
+	os.Exit(Main(m))
 }
