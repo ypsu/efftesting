@@ -52,9 +52,24 @@ func (et ET) Expect(desc string, got any, want expectationString) {
 	}
 	const format = "Non-empty diff for effect \"%s\", diff (-want, +got):\n%s"
 	diff := Diff(w, g)
+	defaultReplacer.replace(g)
 	et.t.Helper()
 	et.t.Errorf(format, desc, diff)
+}
+
+// Check checks that want is got.
+// If they are unequal, the test is aborted.
+// want must be a string literal otherwise the rewrite feature won't work.
+func (et ET) Check(desc string, got any, want expectationString) {
+	g, w := fmt.Sprint(got), detab(string(want))
+	if g == w {
+		return
+	}
+	const format = "Non-empty diff for effect \"%s\", diff (-want, +got):\n%s"
+	diff := Diff(w, g)
 	defaultReplacer.replace(g)
+	et.t.Helper()
+	et.t.Fatalf(format, desc, diff)
 }
 
 // Context is the number of lines to display before and after the diff starts and ends.

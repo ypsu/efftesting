@@ -15,7 +15,7 @@ func must(t *testing.T, err error) {
 	}
 }
 
-func TestExpectOK(t *testing.T) {
+func TestExpect(t *testing.T) {
 	et := New(t)
 	et.Expect("bool1", false, "false")
 	et.Expect("bool2", true, "true")
