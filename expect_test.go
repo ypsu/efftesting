@@ -20,7 +20,14 @@ func TestExpect(t *testing.T) {
 	et.Expect("int1", 0, "0")
 	et.Expect("int2", -43, "-43")
 	et.Expect("string", "blah", "blah")
-	et.Expect("intslice", []int{1, 2, 3, 4, 5}, "[1 2 3 4 5]")
+	et.Expect("intslice", []int{1, 2, 3, 4, 5}, `
+		[
+		  1,
+		  2,
+		  3,
+		  4,
+		  5
+		]`)
 	et.Expect("multiline_quoted1", "hello\nworld\n", "hello\nworld\n")
 	et.Expect("multiline_quoted2", "\nhello\nworld\n", "\n\nhello\nworld\n")
 	et.Expect("multiline_backticked1", "hello\nworld\n", `
@@ -39,8 +46,21 @@ func TestExpect(t *testing.T) {
 		private int
 	}{{1, []string{"a", "b"}, 7}, {2, []string{"multiline\nstring"}, 9}}
 	et.Expect("struct", structure, `
-		[{1 [a b] 7} {2 [multiline
-		string] 9}]`)
+		[
+		  {
+		    "I": 1,
+		    "V": [
+		      "a",
+		      "b"
+		    ]
+		  },
+		  {
+		    "I": 2,
+		    "V": [
+		      "multiline\nstring"
+		    ]
+		  }
+		]`)
 }
 
 func TestReplacer(t *testing.T) {

@@ -3,6 +3,7 @@ package efftesting
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/format"
@@ -46,7 +47,7 @@ func detab(s string) string {
 // Expect checks that want is got.
 // want must be a string literal otherwise the rewrite feature won't work.
 func (et ET) Expect(desc string, got any, want expectationString) {
-	g, w := fmt.Sprint(got), detab(string(want))
+	g, w := stringify(got), detab(string(want))
 	if g == w {
 		return
 	}
@@ -61,7 +62,7 @@ func (et ET) Expect(desc string, got any, want expectationString) {
 // If they are unequal, the test is aborted.
 // want must be a string literal otherwise the rewrite feature won't work.
 func (et ET) Check(desc string, got any, want expectationString) {
-	g, w := fmt.Sprint(got), detab(string(want))
+	g, w := stringify(got), detab(string(want))
 	if g == w {
 		return
 	}
@@ -241,4 +242,24 @@ func Main(m *testing.M) int {
 		fmt.Fprintf(os.Stderr, "Expectations updated.\n")
 	}
 	return code
+}
+
+func stringify(v any) string {
+	if s, ok := v.(fmt.Stringer); ok {
+		return s.String()
+	}
+	switch v := v.(type) {
+	case []byte:
+		return string(v)
+	case string:
+		return v
+	case float32, float64, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprint(v)
+	}
+
+	js, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(js)
 }
