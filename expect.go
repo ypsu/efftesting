@@ -8,11 +8,11 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"log"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
+	"testing"
 )
 
 // expectationString is a local type so that users cannot create it.
@@ -20,24 +20,13 @@ import (
 // This string must always be a string constant passed into the function due to the auto-rewrite feature.
 type expectationString string
 
-type printfer interface {
-	Printf(format string, args ...any)
-}
-type errorfer interface {
-	Errorf(format string, args ...any)
-}
-type helper interface {
-	Helper()
-}
-
 // ET (EffTesting) is an expectation tester.
 type ET struct {
-	t any
+	t *testing.T
 }
 
 // New creates a new ET.
-// t can be either *testing.T, *log.Logger, or nil.
-func New(t any) ET {
+func New(t *testing.T) ET {
 	return ET{t}
 }
 
@@ -63,17 +52,8 @@ func (et ET) Expect(desc string, got any, want expectationString) {
 	}
 	const format = "Non-empty diff for effect \"%s\", diff (-want, +got):\n%s"
 	diff := Diff(w, g)
-	switch reporter := et.t.(type) {
-	case errorfer:
-		if h, ok := et.t.(helper); ok {
-			h.Helper()
-		}
-		reporter.Errorf(format, desc, diff)
-	case printfer:
-		reporter.Printf(format, desc, diff)
-	default:
-		log.Printf(format, desc, diff)
-	}
+	et.t.Helper()
+	et.t.Errorf(format, desc, diff)
 	defaultReplacer.replace(g)
 }
 
