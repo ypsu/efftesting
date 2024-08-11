@@ -32,6 +32,15 @@ func TestExpect(t *testing.T) {
 		hello
 		world
 	`)
+
+	structure := []struct {
+		I       int
+		V       []string
+		private int
+	}{{1, []string{"a", "b"}, 7}, {2, []string{"multiline\nstring"}, 9}}
+	et.Expect("struct", structure, `
+		[{1 [a b] 7} {2 [multiline
+		string] 9}]`)
 }
 
 func TestReplacer(t *testing.T) {

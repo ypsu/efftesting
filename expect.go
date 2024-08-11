@@ -233,7 +233,7 @@ func Main(m *testing.M) int {
 		return code
 	}
 	if len(defaultReplacer.replacements) != 0 {
-		_, testfile, _, _ := runtime.Caller(0)
+		_, testfile, _, _ := runtime.Caller(1)
 		if err := defaultReplacer.apply(testfile); err != nil {
 			fmt.Fprintf(os.Stderr, "efftesting update failed: %v.\n", err)
 			return 1
