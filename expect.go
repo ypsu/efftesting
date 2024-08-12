@@ -1,4 +1,5 @@
-// Package efftesting checks expectations.
+// Package efftesting checks expectations and optionally rewrites them if the EFFTESTING_UPDATE=1 envvar is set.
+// See https://github.com/ypsu/efftesting for an example.
 package efftesting
 
 import (
