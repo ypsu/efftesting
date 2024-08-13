@@ -5,7 +5,7 @@ function fail() {
   exit 1
 }
 
-tmpfile=/tmp/.effdumpprecommit
+tmpfile=/tmp/.efftestingprecommit
 
 if test "$1" = install; then
   ln -rs pre-commit .git/hooks/ || fail "error: pre-commit install failed."
