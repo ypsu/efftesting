@@ -3,7 +3,7 @@
 // Its main feature is an Expect(effectName string, want any, got string) function.
 // It stringifies want and compares that string to got and fails the test if they are not equal.
 // The magic is this: if got is wrong, efftesting can automatically update the source code to the new value.
-// It should make updating the tests for a code's *effects* a bit easier.
+// It should make updating the tests for a code's effects a bit easier.
 // effectName is just an arbitrary name to make the test log messages clearer.
 //
 // See https://github.com/ypsu/efftesting/tree/main/example/example_test.go for a full example.
@@ -65,6 +65,7 @@
 //
 // Most typical expectations can be rewritten to efftesting expectations.
 // E.g. a EXPECT_LESS_THAN(3, 4) can be rewritten to Expect("comparison", 3 < 4, "true").
+// Or EXPECT_STRING_CONTAINS(str, "foo") can be rewritten to Expect("contains foo", strings.Contains(str, "foo"), "true").
 // Expect and Check can be a powerful building block to make managing tests simpler.
 //
 // efftesting formats multiline strings with backticks.
@@ -129,7 +130,7 @@ func detab(s string) string {
 }
 
 // Expect checks that want is got.
-// want must be a string literal otherwise the rewrite feature won't work.
+// want must be a string literal otherwise the update feature won't work.
 func (et ET) Expect(desc string, got any, want expectationString) {
 	g, w := stringify(got), detab(string(want))
 	if g == w {
@@ -144,7 +145,7 @@ func (et ET) Expect(desc string, got any, want expectationString) {
 
 // Check checks that want is got.
 // If they are unequal, the test is aborted.
-// want must be a string literal otherwise the rewrite feature won't work.
+// want must be a string literal otherwise the update feature won't work.
 func (et ET) Check(desc string, got any, want expectationString) {
 	g, w := stringify(got), detab(string(want))
 	if g == w {
@@ -304,7 +305,7 @@ func (r *replacer) apply(fname string) error {
 }
 
 // Main is the TestMain for efftesting.
-// If a _test.go file has a efftesting expectations then call this explicitly:
+// If a _test.go file has efftesting expectations then call this explicitly:
 //
 //	func TestMain(m *testing.M) {
 //		os.Exit(efftesting.Main(m))
