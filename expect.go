@@ -333,6 +333,9 @@ func stringify(v any) string {
 	if s, ok := v.(fmt.Stringer); ok {
 		return s.String()
 	}
+	if s, ok := v.(error); ok {
+		return s.Error()
+	}
 	switch v := v.(type) {
 	case []byte:
 		return string(v)
