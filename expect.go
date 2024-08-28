@@ -7,6 +7,7 @@
 // effectName is just an arbitrary name to make the test log messages clearer.
 //
 // See https://github.com/ypsu/efftesting/tree/main/example/example_test.go for a full example.
+// See pkgtrim_test.go in https://github.com/ypsu/pkgtrim for a more realistic example.
 //
 // Example:
 //
