@@ -28,6 +28,13 @@ func TestExpect(t *testing.T) {
 		  4,
 		  5
 		]`)
+	et.Expect("map", map[int]int{1: 2, 2: 4, 4: 8, 8: 16}, `
+		{
+		  "1": 2,
+		  "2": 4,
+		  "4": 8,
+		  "8": 16
+		}`)
 	et.Expect("multiline_quoted1", "hello\nworld\n", "hello\nworld\n")
 	et.Expect("multiline_quoted2", "\nhello\nworld\n", "\n\nhello\nworld\n")
 	et.Expect("multiline_backticked1", "hello\nworld\n", `
