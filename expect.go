@@ -16,7 +16,7 @@
 //	}
 //
 //	func TestLength(t *testing.T) {
-//		et := efftesting.ET(t)
+//		et := efftesting.New(t)
 //		et.Expect("string length of tükör", MyStringLength("tükör"), "7")
 //	}
 //
