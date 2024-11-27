@@ -318,7 +318,7 @@ func (r *replacer) apply(fname string) error {
 //		os.Exit(efftesting.Main(m))
 //	}
 func Main(m *testing.M) int {
-	updatemode := os.Getenv("EFFTESTING_UPDATE") == "1"
+	updatemode = os.Getenv("EFFTESTING_UPDATE") == "1"
 	code := m.Run()
 	if code == 0 || !updatemode {
 		if len(defaultReplacer.replacements) != 0 {
