@@ -107,6 +107,8 @@ import (
 // This string must always be a string constant passed into the function due to the auto-rewrite feature.
 type expectationString string
 
+var updatemode bool
+
 // ET (EffTesting) is an expectation tester.
 type ET struct {
 	t *testing.T
@@ -156,7 +158,11 @@ func (et ET) Check(desc string, got any, want expectationString) {
 	diff := Diff(w, g)
 	defaultReplacer.replace(g)
 	et.t.Helper()
-	et.t.Fatalf(format, desc, diff)
+	if updatemode {
+		et.t.Errorf(format, desc, diff)
+	} else {
+		et.t.Fatalf(format, desc, diff)
+	}
 }
 
 // Context is the number of lines to display before and after the diff starts and ends.
@@ -312,8 +318,9 @@ func (r *replacer) apply(fname string) error {
 //		os.Exit(efftesting.Main(m))
 //	}
 func Main(m *testing.M) int {
+	updatemode := os.Getenv("EFFTESTING_UPDATE") == "1"
 	code := m.Run()
-	if code == 0 || os.Getenv("EFFTESTING_UPDATE") != "1" {
+	if code == 0 || !updatemode {
 		if len(defaultReplacer.replacements) != 0 {
 			fmt.Fprintf(os.Stderr, "Expectations need updating, use `EFFTESTING_UPDATE=1 go test ./...` for that.\n")
 		}
