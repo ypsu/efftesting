@@ -155,7 +155,14 @@ func TestReplacer(t *testing.T) {
 		 	go func() {
 		 		et.Expect("in goroutine", "newvalue", "oldvalue") // line 16
 	`)
-	et.Expect("update in goroutine", apply(16, "newvalue"), "")
+	et.Expect("update in goroutine", apply(16, "newvalue"), `
+		 	et.Expect("add more newlines", "\nnew\n\nvalue", "oldvalue")
+		 	go func() {
+		-		et.Expect("in goroutine", "newvalue", "oldvalue") // line 16
+		+		et.Expect("in goroutine", "newvalue", "newvalue") // line 16
+		 	}()
+		 }
+	`)
 }
 
 func TestMain(m *testing.M) {

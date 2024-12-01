@@ -255,11 +255,8 @@ func (r *replacer) apply(fname string) error {
 
 		// Find the Expect and Check functions that have a pending replacement.
 		callexpr, ok := n.(*ast.CallExpr)
-		if !ok {
+		if !ok || len(callexpr.Args) != 3 {
 			return true
-		}
-		if len(callexpr.Args) != 3 {
-			return false
 		}
 		selexpr, ok := callexpr.Fun.(*ast.SelectorExpr)
 		if !ok || selexpr.Sel.Name != "Expect" && selexpr.Sel.Name != "Check" {
