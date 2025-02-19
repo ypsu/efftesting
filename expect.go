@@ -85,6 +85,9 @@
 // Once the correct implementation is in, the tests can be quickly updated with a single command.
 // The only additional work then needed is removing the TODO markers while verifying the correctness of the expectations.
 // Makes a test driven development much easier.
+//
+// As a convenience the package also contains Must*, Override, Stringify helper functions to make writing unittests less verbose.
+// These only work after New(t) was called (t is saved to a global variable so these functions remain less verbose).
 package efftesting
 
 import (
@@ -116,6 +119,15 @@ type ET struct {
 
 // New creates a new ET.
 func New(t *testing.T) ET {
+
+	// Set up currentT from utils.go.
+	t.Helper()
+	if currentT != nil {
+		t.Fatal("efftesting.UnsupportedParallelTesting")
+	}
+	currentT = t
+	t.Cleanup(func() { currentT = nil })
+
 	return ET{t}
 }
 

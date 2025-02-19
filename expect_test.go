@@ -1,6 +1,7 @@
 package efftesting
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,6 +164,59 @@ func TestReplacer(t *testing.T) {
 		 	}()
 		 }
 	`)
+}
+
+func TestMust(t *testing.T) {
+	New(t)
+	Must(true)
+	Must(nil)
+}
+
+func TestOverride(t *testing.T) {
+	x := 4
+
+	checkx := func(want int) {
+		t.Helper()
+		if got := x; got != want {
+			t.Errorf("efftetsing_test.UnexpectedXValue got=%d want=%d", got, want)
+		}
+	}
+	t.Cleanup(func() { checkx(4) })
+
+	New(t)
+	Override(&x, 5)
+	checkx(5)
+}
+
+func TestStringifySyntax(t *testing.T) {
+	et := New(t)
+	et.Expect("Empty", Stringify(), "")
+	et.Expect("Number", Stringify(2), "2")
+	et.Expect("False", Stringify(false), "false")
+	et.Expect("True", Stringify(true), "true")
+	et.Expect("Error", Stringify(fmt.Errorf("SomeError")), "SomeError")
+	et.Expect("True1", Stringify("result1", true), "result1")
+	et.Expect("False1", Stringify("result1", false), "failed")
+	et.Expect("Success1", Stringify("result1", nil), "result1")
+	et.Expect("Error1", Stringify("result1", fmt.Errorf("SomeError")), "SomeError")
+	et.Expect("Success2", Stringify("result1", "result2", nil), `
+		[
+		  "result1",
+		  "result2"
+		]`,
+	)
+	et.Expect("Error2", Stringify("result1", "result2", fmt.Errorf("SomeError")), "SomeError")
+	et.Expect("FuncSuccess1", Stringify(
+		func() (int, string, error) { return 1, "result2", nil }(),
+	), `
+		[
+		  1,
+		  "result2"
+		]`,
+	)
+	et.Expect("FuncError1", Stringify(
+		func() (int, string, error) { return 1, "result2", fmt.Errorf("SomeError") }(),
+	), "SomeError")
 }
 
 func TestMain(m *testing.M) {
