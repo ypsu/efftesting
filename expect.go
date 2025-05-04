@@ -88,6 +88,7 @@
 //
 // As a convenience the package also contains Must*, Override, Stringify helper functions to make writing unittests less verbose.
 // These only work after New(t) was called (t is saved to a global variable so these functions remain less verbose).
+// They are top level functions because Go doesn't support generics for struct methods.
 package efftesting
 
 import (
