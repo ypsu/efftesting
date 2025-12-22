@@ -99,8 +99,10 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"maps"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -337,10 +339,15 @@ func Main(m *testing.M) int {
 		return code
 	}
 	if len(defaultReplacer.replacements) != 0 {
-		_, testfile, _, _ := runtime.Caller(1)
-		if err := defaultReplacer.apply(testfile); err != nil {
-			fmt.Fprintf(os.Stderr, "efftesting update failed: %v.\n", err)
-			return 1
+		filesmap := map[string]bool{}
+		for loc := range defaultReplacer.replacements {
+			filesmap[loc.fname] = true
+		}
+		for _, f := range slices.Sorted(maps.Keys(filesmap)) {
+			if err := defaultReplacer.apply(f); err != nil {
+				fmt.Fprintf(os.Stderr, "efftesting update failed: %v.\n", err)
+				return 1
+			}
 		}
 		fmt.Fprintf(os.Stderr, "Expectations updated.\n")
 	}
