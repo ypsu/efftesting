@@ -1,5 +1,8 @@
 // Package efftesting checks expectations and optionally rewrites them if the EFFTESTING_UPDATE=1 envvar is set.
 //
+// Deprecated: Use the newer [efft] subpackage instead.
+// It's more streamlined and easier to use (e.g. no descriptions or TestMains are needed anymore).
+//
 // Its main feature is an Expect(effectName string, want any, got string) function.
 // It stringifies want and compares that string to got and fails the test if they are not equal.
 // The magic is this: if got is wrong, efftesting can automatically update the source code to the new value.

@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/ypsu/efftesting"
+	"github.com/ypsu/efftesting/efft"
 )
 
 func MyStringLength(s string) int {
@@ -17,9 +16,9 @@ func MyStringLength(s string) int {
 }
 
 func TestLength(t *testing.T) {
-	et := efftesting.New(t)
-	et.Expect("string length of tükör", MyStringLength("tükör"), "7")
-	et.Expect("slice example", strings.Split("This is a sentence.", " "), `
+	efft.Init(t)
+	efft.Expect(MyStringLength("tükör"))("7")
+	efft.Expect(strings.Split("This is a sentence.", " "))(`
 		[
 		  "This",
 		  "is",
@@ -30,15 +29,15 @@ func TestLength(t *testing.T) {
 
 // TestHello demonstrates https://go.dev/doc/tutorial/add-a-test in efftesting format.
 func TestHello(t *testing.T) {
-	et := efftesting.New(t)
+	efft.Init(t)
 
 	msg, err := hello("")
-	et.Expect("empty hello is empty msg", msg, "")
-	et.Expect("empty hello's error", err, "empty name")
+	efft.Expect(msg)("")
+	efft.Expect(err)("empty name")
 
 	msg, err = hello("Glady")
-	et.Expect("no error for non-empty name", err, "null")
-	et.Expect("name is in msg", regexp.MustCompile(`\bGlady\b`).MatchString(msg), "true")
+	efft.Expect(err)("null")
+	efft.Expect(regexp.MustCompile(`\bGlady\b`).MatchString(msg))("true")
 }
 
 // randomFormat returns one of a set of greeting messages. The returned
@@ -66,8 +65,4 @@ func hello(name string) (string, error) {
 	// Create a message using a random format.
 	message := fmt.Sprintf(randomFormat(), name)
 	return message, nil
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(efftesting.Main(m))
 }
