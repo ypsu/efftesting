@@ -149,7 +149,7 @@ func checkT() {
 func Expect(args ...any) func(expectationString) {
 	checkT()
 	t.Helper()
-	got := stringify(args...)
+	got := Stringify(args...)
 	loc := defaultReplacer.Replace(got)
 	return func(wanted expectationString) {
 		want := internal.Detab(string(wanted))
@@ -167,7 +167,7 @@ func Expect(args ...any) func(expectationString) {
 func Check(args ...any) func(expectationString) {
 	checkT()
 	t.Helper()
-	got := stringify(args...)
+	got := Stringify(args...)
 	loc := defaultReplacer.Replace(got)
 	return func(wanted expectationString) {
 		want := internal.Detab(string(wanted))

@@ -75,12 +75,12 @@ func stringify1(v any) string {
 	return string(js)
 }
 
-// stringify stringifies an expression.
-// Can be used to stringify a single value or even as "efft.stringify(somefunc())".
+// Stringify stringifies an expression.
+// Can be used to stringify a single value or even as "efft.Stringify(somefunc())".
 // If there are multiple args and the last one indicates an error then only that part is stringified.
 // Otherwise the rest of the args are stringified into a reasonable format.
 // This is a convenience helper.
-func stringify(args ...any) string {
+func Stringify(args ...any) string {
 	if len(args) == 0 {
 		return ""
 	}
@@ -98,10 +98,10 @@ func stringify(args ...any) string {
 		return stringify1(args[:len(args)-1])
 	} else if err, ok := lastarg.(error); ok || lastarg == nil {
 		if err != nil {
-			return stringify(err)
+			return stringify1(err)
 		}
 		if len(args) == 2 {
-			return stringify(args[0])
+			return Stringify(args[0])
 		}
 		return stringify1(args[:len(args)-1])
 	}
