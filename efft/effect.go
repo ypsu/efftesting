@@ -1,15 +1,16 @@
 // Package efft from efftesting checks expectations and optionally rewrites them if the EFFUP=1 envvar is set.
+// Just write `efft.Effect(any arg here)`, efftesting deterministically stringifies the arguments and maintains the expectation for the result.
 //
 // Example usage:
 //
 //	func TestSplit(t *testing.T) {
 //	  efft.Init(t)
 //
-//	  // simple cut
-//	  efft.Expect(strings.CutPrefix("hello world", "hello"))(" world")
+//	  // simple cut, omits the success flag to keep things short
+//	  efft.Effect(strings.CutPrefix("hello world", "hello")).Equals(" world")
 //
-//	  // failing cut
-//	  efft.Expect(strings.CutPrefix("hello world", "world"))(`
+//	  // failing cut, stringifies the success flag too on failure
+//	  efft.Effect(strings.CutPrefix("hello world", "world")).Equals(`
 //	    [
 //	      "hello world",
 //	      false
@@ -23,10 +24,10 @@
 //	  efft.Init(t)
 //
 //	  // simple cut
-//	  efft.Expect(strings.CutPrefix("hello world", "hello"))
+//	  efft.Effect(strings.CutPrefix("hello world", "hello"))
 //
 //	  // failing cut
-//	  efft.Expect(strings.CutPrefix("hello world", "world"))
+//	  efft.Effect(strings.CutPrefix("hello world", "world"))
 //	}
 //
 // Note that if the function's last arg is a nil error or true boolean then it's automatically omitted.
@@ -44,6 +45,9 @@ import (
 
 	"github.com/ypsu/efftesting/efft/internal"
 )
+
+// Note to include in the error message when there's a diff between the effect's got and wanted value.
+var Note string
 
 // expectationString is a local type so that users cannot create it.
 // Makes the library harder to misuse because users cannot pass in variables.
@@ -84,7 +88,7 @@ func init() {
 }
 
 // Init setup efft for this testcase.
-// Note that efft doesn't support parallel running.
+// Note that efft doesn't support sub- or parallel tests.
 func Init(tt *testing.T) {
 	// Set up currentT from utils.go.
 	tt.Helper()
@@ -92,6 +96,7 @@ func Init(tt *testing.T) {
 		t.Fatal("efft.UnsupportedParallelTesting")
 	}
 	t = tt
+	Note = ""
 	t.Cleanup(func() { t = nil })
 	defaultReplacer.Incomplete = map[internal.Location]bool{}
 	defaultReplacer.Replacements = map[internal.Location]string{}
@@ -142,47 +147,48 @@ func checkT() {
 	}
 }
 
-// Expect sets up an expectation.
-// Expect accepts a list of any args so it can be used with functions that return multiple values.
-// This is why the expectation has to be given in a separate function.
-// See the package comment how to use this.
-func Expect(args ...any) func(expectationString) {
-	checkT()
+type result struct {
+	got   string
+	loc   internal.Location
+	fatal bool
+}
+
+func (r result) Equals(wanted expectationString) {
+	got, want := r.got, internal.Detab(string(wanted))
+	delete(defaultReplacer.Incomplete, r.loc)
+	if got == want {
+		delete(defaultReplacer.Replacements, r.loc)
+		return
+	}
 	t.Helper()
-	got := Stringify(args...)
-	loc := defaultReplacer.Replace(got)
-	return func(wanted expectationString) {
-		want := internal.Detab(string(wanted))
-		delete(defaultReplacer.Incomplete, loc)
-		if got == want {
-			delete(defaultReplacer.Replacements, loc)
-			return
-		}
-		t.Helper()
-		t.Errorf("efft.EffectDiff -want +got:\n%s", Diff(want, got))
+	var note string
+	if Note != "" {
+		note = "note=`" + Note + "` "
+	}
+	if updatemode || !r.fatal {
+		t.Errorf("efft.EffectDiff %s-want +got:\n%s", note, Diff(want, got))
+	} else {
+		t.Fatalf("efft.FatalEffectDiff %s-want +got:\n%s", note, Diff(string(want), got))
 	}
 }
 
-// Check is same as Expect but fails the test if the expectation doesn't match.
-func Check(args ...any) func(expectationString) {
+// Effect sets up an expectation.
+// Effect accepts a list of any args so it can be used with functions that return multiple values.
+// This is why the expectation has to be given in a separate function.
+// See the package comment how to use this.
+func Effect(args ...any) result { //revive:disable-line:unexported-return
 	checkT()
 	t.Helper()
 	got := Stringify(args...)
-	loc := defaultReplacer.Replace(got)
-	return func(wanted expectationString) {
-		want := internal.Detab(string(wanted))
-		delete(defaultReplacer.Incomplete, loc)
-		if got == want {
-			delete(defaultReplacer.Replacements, loc)
-			return
-		}
-		t.Helper()
-		if updatemode {
-			t.Errorf("efft.EffectDiff -want +got:\n%s", Diff(string(want), got))
-		} else {
-			t.Fatalf("efft.FatalEffectDiff -want +got:\n%s", Diff(string(want), got))
-		}
-	}
+	return result{got, defaultReplacer.Replace(got), false}
+}
+
+// FatalEffect is same as Effect but aborts the test if the expectation doesn't match.
+func FatalEffect(args ...any) result { //revive:disable-line:unexported-return
+	checkT()
+	t.Helper()
+	got := Stringify(args...)
+	return result{got, defaultReplacer.Replace(got), true}
 }
 
 // Context is the number of lines to display before and after the diff starts and ends.

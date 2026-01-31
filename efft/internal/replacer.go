@@ -98,31 +98,34 @@ func (r *Replacer) Apply(fname string) error {
 		if !ok {
 			return false // no need to dig deeper than expressions
 		}
-		callexpr2, ok2 := callexpr.Fun.(*ast.CallExpr)
-		funcname, pos := "", token.Position{}
-		if ok2 {
-			if selexpr, ok := callexpr2.Fun.(*ast.SelectorExpr); ok {
-				funcname, pos = selexpr.Sel.Name, fset.Position(callexpr2.Pos())
+		selexpr, ok := callexpr.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return false // not a function call, so this cannot be efft.Effect() or ...Equals()
+		}
+		funcname, pos, rparen := selexpr.Sel.Name, fset.Position(callexpr.Pos()), callexpr.Rparen
+		if funcname == "Equals" {
+			// This might be an Effect's Equals so go to the caller then.
+			callexpr, ok = selexpr.X.(*ast.CallExpr)
+			if !ok {
+				return false
 			}
-		} else if selexpr, ok := callexpr.Fun.(*ast.SelectorExpr); ok {
+			selexpr, ok = callexpr.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return false
+			}
 			funcname, pos = selexpr.Sel.Name, fset.Position(callexpr.Pos())
 		}
 		loc := Location{pos.Filename, pos.Line}
 		repl, found := r.Replacements[loc]
-		if !found || funcname != "Expect" && funcname != "Check" {
+		if !found || funcname != "Effect" && funcname != "FatalEffect" {
 			return false
 		}
 		delete(r.Replacements, loc)
 
-		if !ok2 {
-			// This is the "expectations missing" case.
-			exprstmt.X = &ast.CallExpr{
-				Fun:    callexpr,
-				Args:   []ast.Expr{makelit(repl, pos.Column)},
-				Rparen: callexpr.Rparen,
-			}
-		} else {
-			callexpr.Args = []ast.Expr{makelit(repl, pos.Column)}
+		exprstmt.X = &ast.CallExpr{
+			Fun:    &ast.SelectorExpr{X: callexpr, Sel: ast.NewIdent("Equals")},
+			Args:   []ast.Expr{makelit(repl, pos.Column)},
+			Rparen: rparen,
 		}
 		return false
 	})

@@ -17,8 +17,8 @@ func MyStringLength(s string) int {
 
 func TestLength(t *testing.T) {
 	efft.Init(t)
-	efft.Expect(MyStringLength("tükör"))("7")
-	efft.Expect(strings.Split("This is a sentence.", " "))(`
+	efft.Effect(MyStringLength("tükör")).Equals("7")
+	efft.Effect(strings.Split("This is a sentence.", " ")).Equals(`
 		[
 		  "This",
 		  "is",
@@ -32,12 +32,12 @@ func TestHello(t *testing.T) {
 	efft.Init(t)
 
 	msg, err := hello("")
-	efft.Expect(msg)("")
-	efft.Expect(err)("empty name")
+	efft.Effect(msg).Equals("")
+	efft.Effect(err).Equals("empty name")
 
 	msg, err = hello("Glady")
-	efft.Expect(err)("null")
-	efft.Expect(regexp.MustCompile(`\bGlady\b`).MatchString(msg))("true")
+	efft.Effect(err).Equals("null")
+	efft.Effect(regexp.MustCompile(`\bGlady\b`).MatchString(msg)).Equals("true")
 }
 
 // randomFormat returns one of a set of greeting messages. The returned

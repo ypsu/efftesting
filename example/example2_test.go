@@ -11,10 +11,10 @@ func TestSplit(t *testing.T) {
 	efft.Init(t)
 
 	// simple cut
-	efft.Expect(strings.CutPrefix("hello world", "hello"))(" world")
+	efft.Effect(strings.CutPrefix("hello world", "hello")).Equals(" world")
 
 	// failing cut
-	efft.Expect(strings.CutPrefix("hello world", "world"))(`
+	efft.Effect(strings.CutPrefix("hello world", "world")).Equals(`
 		[
 		  "hello world",
 		  false
