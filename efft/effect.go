@@ -166,9 +166,9 @@ func (r result) Equals(wanted expectationString) {
 		note = "note=`" + Note + "` "
 	}
 	if updatemode || !r.fatal {
-		t.Errorf("efft.EffectDiff %s-want +got:\n%s", note, Diff(want, got))
+		t.Errorf("efft.EffectDiff %s-expectation +runtime:\n%s", note, Diff(want, got))
 	} else {
-		t.Fatalf("efft.FatalEffectDiff %s-want +got:\n%s", note, Diff(string(want), got))
+		t.Fatalf("efft.FatalEffectDiff %s-expectation +runtime:\n%s", note, Diff(string(want), got))
 	}
 }
 
