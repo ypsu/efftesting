@@ -62,8 +62,8 @@ func makelit(s string, indent int) *ast.BasicLit {
 		}
 	}
 	if ss[len(ss)-1] == "" {
-		// The last line should have one indent less so that the closing `) looks nicely indented.
-		ss[len(ss)-1] = strings.TrimSuffix(indentstr, "\t")
+		// The last line should be indented so that the closing `) is at the right place.
+		ss[len(ss)-1] = indentstr
 	}
 	return &ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("`\n%s`", strings.Join(ss, "\n"))}
 }
@@ -175,5 +175,5 @@ func Detab(s string) string {
 	for indent < len(s) && s[indent] == '\t' {
 		indent++
 	}
-	return strings.TrimPrefix(strings.TrimRight(strings.ReplaceAll(s, s[:indent], "\n"), "\t"), "\n")
+	return strings.TrimPrefix(strings.ReplaceAll(s, s[:indent], "\n"), "\n")
 }

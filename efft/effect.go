@@ -198,6 +198,16 @@ var Context = 2
 // Defaults to a very simple diff treats all lines changed from the first until the last change.
 var Diff = dummydiff
 
+var spaceDisplayer = strings.NewReplacer(" ", "·", "\t", "≫\t")
+
+func markTrailingSpace(s string) string {
+	n := len(s)
+	if n == 0 || s[n-1] != ' ' && s[n-1] != '\t' {
+		return s
+	}
+	return spaceDisplayer.Replace(s)
+}
+
 func dummydiff(lts, rts string) string {
 	if lts == rts {
 		return ""
@@ -213,16 +223,16 @@ func dummydiff(lts, rts string) string {
 	}
 	d := make([]string, 0, 2*Context+len(lt)-commonStart-commonEnd+len(rt)-commonStart-commonEnd)
 	for i := max(0, commonStart-Context); i < commonStart; i++ {
-		d = append(d, " "+lt[i])
+		d = append(d, " "+markTrailingSpace(lt[i]))
 	}
 	for i := commonStart; i < len(lt)-commonEnd; i++ {
-		d = append(d, "-"+lt[i])
+		d = append(d, "-"+markTrailingSpace(lt[i]))
 	}
 	for i := commonStart; i < len(rt)-commonEnd; i++ {
-		d = append(d, "+"+rt[i])
+		d = append(d, "+"+markTrailingSpace(rt[i]))
 	}
 	for i := len(lt) - commonEnd; i < min(len(lt), len(lt)-commonEnd+Context); i++ {
-		d = append(d, " "+lt[i])
+		d = append(d, " "+markTrailingSpace(lt[i]))
 	}
 	return strings.Join(d, "\n") + "\n"
 }

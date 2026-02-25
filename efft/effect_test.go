@@ -36,21 +36,32 @@ func TestEffect(t *testing.T) {
 	efft.Effect("hello\nworld\n").Equals(`
 		hello
 		world
-	`)
+		`)
 	efft.Effect("\nhello\nworld\n").Equals(`
 		
 		hello
 		world
-	`)
+		`)
 	efft.Effect("hello\nworld\n").Equals(`
 		hello
 		world
-	`)
+		`)
 	efft.Effect("\nhello\nworld\n").Equals(`
 		
 		hello
 		world
-	`)
+		`)
+	efft.Effect("\nhello\nworld\n\t").Equals(`
+		
+		hello
+		world
+			`)
+	efft.Effect("\nhello\nworld\n\t\n").Equals(`
+		
+		hello
+		world
+			
+		`)
 
 	structure := []struct {
 		I       int
@@ -130,7 +141,7 @@ func TestReplacer(t *testing.T) {
 			efft.Effect("y\nx").Equals("x\ny")
 			// some comment after
 		}
-	`, "!", "`"))
+		`, "!", "`"))
 
 	apply := func(line int, s string) (string, error) {
 		t.Helper()
@@ -156,7 +167,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("newvalue").Equals("newvalue")
 		 	efft.Effect( /* line 8 */ "newvalue").Equals(!oldvalue!)
 		 	efft.Effect("new\nvalue").Equals("oldvalue") // line 9
-	`)
+		`)
 
 	efft.Note = "simple replacement"
 	efft.Effect(apply(6, "newvalue")).Equals(`
@@ -166,7 +177,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("somevalue").Equals("newvalue")
 		 	efft.Effect("newvalue")
 		 	efft.Effect( /* line 8 */ "newvalue").Equals(!oldvalue!)
-	`)
+		`)
 
 	efft.Note = "quote change"
 	efft.Effect(apply(8, "newvalue")).Equals(`
@@ -176,7 +187,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect( /* line 8 */ "newvalue").Equals("newvalue")
 		 	efft.Effect("new\nvalue").Equals("oldvalue") // line 9
 		 	efft.Effect("new value").Equals(!
-	`)
+		`)
 
 	efft.Note = "add newline"
 	efft.Effect(apply(8, "new\nvalue")).Equals(`
@@ -188,7 +199,7 @@ func TestReplacer(t *testing.T) {
 		+		value!)
 		 	efft.Effect("new\nvalue").Equals("oldvalue") // line 9
 		 	efft.Effect("new value").Equals(!
-	`)
+		`)
 
 	efft.Note = "remove single internal newline"
 	efft.Effect(apply(10, "one\nthree\n")).Equals(`
@@ -198,11 +209,11 @@ func TestReplacer(t *testing.T) {
 		-		three
 		-	!) // line 14
 		+		three
-		+	!,
+		+		!,
 		+	) // line 14
 		 	efft.Effect("\nnew\n\nvalue").Equals("oldvalue")
 		 	go func() {
-	`)
+		`)
 
 	efft.Note = "remove two internal newlines"
 	efft.Effect(apply(10, "three\n")).Equals(`
@@ -213,11 +224,11 @@ func TestReplacer(t *testing.T) {
 		-		three
 		-	!) // line 14
 		+		three
-		+	!,
+		+		!,
 		+	) // line 14
 		 	efft.Effect("\nnew\n\nvalue").Equals("oldvalue")
 		 	go func() {
-	`)
+		`)
 
 	efft.Note = "remove last newline"
 	efft.Effect(apply(10, "one\ntwo\nthree")).Equals(`
@@ -229,7 +240,7 @@ func TestReplacer(t *testing.T) {
 		+	) // line 14
 		 	efft.Effect("\nnew\n\nvalue").Equals("oldvalue")
 		 	go func() {
-	`)
+		`)
 
 	efft.Note = "remove all newlines"
 	efft.Effect(apply(10, "one two three")).Equals(`
@@ -244,17 +255,20 @@ func TestReplacer(t *testing.T) {
 		+	) // line 14
 		 	efft.Effect("\nnew\n\nvalue").Equals("oldvalue")
 		 	go func() {
-	`)
+		`)
 
 	efft.Note = "add a newline"
 	efft.Effect(apply(10, "one\ntwo\nnewline\nthree\n")).Equals(`
 		 		one
 		 		two
+		-		three
+		-	!) // line 14
 		+		newline
-		 		three
-		 	!) // line 14
-	`,
-	)
+		+		three
+		+		!) // line 14
+		 	efft.Effect("\nnew\n\nvalue").Equals("oldvalue")
+		 	go func() {
+		`)
 
 	efft.Note = "update in goroutine"
 	efft.Effect(apply(17, "newvalue")).Equals(`
@@ -264,7 +278,7 @@ func TestReplacer(t *testing.T) {
 		+		efft.Effect("newvalue").Equals("newvalue") // line 17
 		 	}()
 		 	efft.Effect("a", "b", "c").Equals("oldvalue")
-	`)
+		`)
 
 	efft.Note = "expect has multiple arguments"
 	efft.Effect(apply(19, "a,b,c")).Equals(`
@@ -274,7 +288,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("a", "b", "c").Equals("a,b,c")
 		 	efft.Effect("a", "b", "c").Equals()
 		 	efft.Effect("a", "b", "c").Equals("a", "b")
-	`)
+		`)
 
 	efft.Note = "expectation is empty"
 	efft.Effect(apply(20, "a,b,c")).Equals(`
@@ -284,7 +298,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("a", "b", "c").Equals("a,b,c")
 		 	efft.Effect("a", "b", "c").Equals("a", "b")
 		 	efft.Effect("a", "b", "c").Equals(3)
-	`)
+		`)
 
 	efft.Note = "expectation has multiple arguments"
 	efft.Effect(apply(21, "a,b,c")).Equals(`
@@ -294,7 +308,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("a", "b", "c").Equals("a,b,c")
 		 	efft.Effect("a", "b", "c").Equals(3)
 		 	// some comment before
-	`)
+		`)
 
 	efft.Note = "expectation is a number"
 	efft.Effect(apply(22, "a,b,c")).Equals(`
@@ -304,7 +318,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("a", "b", "c").Equals("a,b,c")
 		 	// some comment before
 		 	efft.Effect("y\nx").Equals("x\ny") // line 24
-	`)
+		`)
 
 	efft.Note = "adding expectation keeps the post-comment intact"
 	efft.Effect(apply(24, "x\ny")).Equals(`
@@ -316,7 +330,7 @@ func TestReplacer(t *testing.T) {
 		+		y!) // line 24
 		 	efft.Effect("y\nx").Equals("x\ny")
 		 	// some comment after
-	`)
+		`)
 
 	efft.Note = "adding expectation keeps the next comment intact"
 	efft.Effect(apply(25, "x\ny")).Equals(`
@@ -328,7 +342,7 @@ func TestReplacer(t *testing.T) {
 		+		y!)
 		 	// some comment after
 		 }
-	`)
+		`)
 
 	efft.Note = "backtick in the string means quoted string"
 	efft.Effect(apply(6, "x\n`\ny")).Equals(`
@@ -338,7 +352,7 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("somevalue").Equals("x\n!\ny")
 		 	efft.Effect("newvalue")
 		 	efft.Effect( /* line 8 */ "newvalue").Equals(!oldvalue!)
-	`)
+		`)
 
 	efft.Note = "bad replacement"
 	efft.Effect(apply(1, "")).Equals("efft.ReplacementsFailed file=test.go lines=[1]")
