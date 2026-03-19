@@ -140,6 +140,8 @@ func TestReplacer(t *testing.T) {
 			efft.Effect("y\nx").Equals("x\ny") // line 24
 			efft.Effect("y\nx").Equals("x\ny")
 			// some comment after
+			// line 27
+			efft.Effect("string '\"with\"' quotes").Equals("string '\"without\"' quotes")
 		}
 		`, "!", "`"))
 
@@ -341,7 +343,7 @@ func TestReplacer(t *testing.T) {
 		+		x
 		+		y!)
 		 	// some comment after
-		 }
+		 	// line 27
 		`)
 
 	efft.Note = "backtick in the string means quoted string"
@@ -352,6 +354,16 @@ func TestReplacer(t *testing.T) {
 		+	efft.Effect("somevalue").Equals("x\n!\ny")
 		 	efft.Effect("newvalue")
 		 	efft.Effect( /* line 8 */ "newvalue").Equals(!oldvalue!)
+		`)
+
+	efft.Note = "replacing quoted strings"
+	efft.Effect(apply(28, `string '"with"' quotes`)).Equals(`
+		 	// some comment after
+		 	// line 27
+		-	efft.Effect("string '\"with\"' quotes").Equals("string '\"without\"' quotes")
+		+	efft.Effect("string '\"with\"' quotes").Equals("string '\"with\"' quotes")
+		 }
+		 
 		`)
 
 	efft.Note = "bad replacement"
