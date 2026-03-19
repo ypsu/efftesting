@@ -132,13 +132,15 @@ func (r *Replacer) Apply(fname string) error {
 	if inspectErr != nil {
 		return fmt.Errorf("efft.Rewrite: %v", inspectErr)
 	}
-	if len(r.Replacements) > 0 {
-		lines := make([]int, 0, len(r.Replacements))
-		for loc := range r.Replacements {
-			lines = append(lines, loc.Line)
+	missedLines := make([]int, 0, len(r.Replacements))
+	for loc := range r.Replacements {
+		if loc.Fname == fname {
+			missedLines = append(missedLines, loc.Line)
 		}
-		slices.Sort(lines)
-		return fmt.Errorf("efft.ReplacementsFailed file=%s lines=%v", filepath.Base(fname), lines)
+	}
+	if len(missedLines) > 0 {
+		slices.Sort(missedLines)
+		return fmt.Errorf("efft.ReplacementsFailed file=%s lines=%v", filepath.Base(fname), missedLines)
 	}
 
 	bs := &bytes.Buffer{}
